@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        #chart-container {
+            width: 80%;
+            max-width: 800px;
+            margin-top: 20px;
+        }
+        canvas {
+            width: 100% !important;
+            height: 400px !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sentiment Analysis</h1>
+    <form id="predict-form">
+        <textarea id="review" name="review" rows="4" cols="50" placeholder="Enter text here..."></textarea><br>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="results"></div>
+
+    <div id="chart-container">
+        <canvas id="logRegChart"></canvas>
+        <canvas id="nbChart"></canvas>
+    </div>
+
+    <script>
+        document.getElementById('predict-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const review = document.getElementById('review').value;
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({ review })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('results').innerHTML = `
+                    <p>Logistic Regression Prediction: ${data.log_reg}</p>
+                    <p>Naive Bayes Prediction: ${data.nb}</p>
+                `;
+            });
+        });
+
+        fetch('/chart-data')
+            .then(response => response.json())
+            .then(data => {
+                const ctxLogReg = document.getElementById('logRegChart').getContext('2d');
+                const ctxNb = document.getElementById('nbChart').getContext('2d');
+
+                new Chart(ctxLogReg, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Logistic Regression Predictions',
+                            data: data.log_reg_values,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                new Chart(ctxNb, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Naive Bayes Predictions',
+                            data: data.nb_values,
+                            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+    </script>
+</body>
+</html>
